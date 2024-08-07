@@ -1,0 +1,74 @@
+Dim excelFilewithPath As String =C("txtFileNamePath").Text
+Dim excelSaveFile As String =C("txtSaveFile").Text
+
+Dim excel As New XLSXExport(excelFilewithPath)
+Dim sheetName As String=excel.SheetNames(0)
+
+Dim dtExcel As DataTable=excel.ReadWorkSheetToDataTable(sheetName)
+
+
+If dtExcel.Columns.Contains("PART 1") Then  
+	dtExcel.Columns("PART 1").ColumnName = "PART1" 
+	 
+End If 
+If  dtExcel.Columns.Contains("PART 2")  Then
+	dtExcel.Columns("PART 2").ColumnName = "PART2"  
+End If 
+If  dtExcel.Columns.Contains("FASTENER REMARKS")  Then
+	dtExcel.Columns("FASTENER REMARKS").ColumnName = "FASTENERREMARKS"  
+End If 
+
+For i As Integer = dtExcel.Rows.Count - 1 To 0 Step -1  
+	' 检查当前行的指定列的值是否等于 0 
+	 
+	If Convert.ToInt32(dtExcel.Rows(i)("RESULTS")) = 0 Then 
+		' 如果等于0，则删除该行 
+		dtExcel.Rows(i).Delete() 
+	End If 
+Next 
+dtExcel.AcceptChanges() 
+
+
+Dim excelName As String=DateTime.Now.ToString("yyyyMMddHHmmss")&".xlsx"
+
+Dim excelNew As New XLSXExport()
+
+excelNew.AddSheet(sheetName)
+
+excelNew.CellValue(sheetName,1,1)=  "PART1"
+excelNew.CellValue(sheetName,1,2)=  "PART2"
+excelNew.CellValue(sheetName,1,3)=  "VOLUME"
+excelNew.CellValue(sheetName,1,4)=  "FASTENER REMARKS"
+excelNew.CellValue(sheetName,1,5)=  "RESULTS"
+excelNew.CellValue(sheetName,1,6)=  "State"
+
+Dim IsMatch As Boolean = False  
+For xx As Integer = 2  To dtExcel.Rows.Count +1
+	excelNew.CellValue(sheetName,xx,1)=  dtExcel.Rows(xx-2)("PART1") 
+	excelNew.CellValue(sheetName,xx,2)=  dtExcel.Rows(xx-2)("PART2")  
+	excelNew.CellValue(sheetName,xx,3)=  dtExcel.Rows(xx-2)("VOLUME")  
+	excelNew.CellValue(sheetName,xx,4)=  dtExcel.Rows(xx-2)("FASTENERREMARKS")  
+	excelNew.CellValue(sheetName,xx,5)=  dtExcel.Rows(xx-2)("RESULTS") 	 
+	excelNew.CellValue(sheetName,xx,6)=  dtExcel.Rows(xx-2)("State") 
+	 
+	If 	 Convert.ToInt32(dtExcel.Rows(xx-2)("RESULTS") ) = 1 Then  
+		excelNew.CellBackcolor(sheetName,xx,4)=Color.Red 
+		IsMatch=True  
+	End If   
+	 
+Next 
+	 
+'自动宽度  
+excelNew.ColumnsAutoFit(sheetName)  
+
+If IsMatch Then
+	excelNew.CellValue(sheetName,1,7)= "JUST" 	 
+	 
+End If 
+
+If Not System.IO.Directory.Exists(excelSaveFile)  Then  
+	' 如果文件夹不存在，则创建它 
+	System.IO.Directory.CreateDirectory(excelSaveFile) 
+End If 
+	 
+excelNew.SavetoFile(excelSaveFile & excelName, True)  
